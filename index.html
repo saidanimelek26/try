@@ -14,14 +14,14 @@
     body{background:linear-gradient(135deg,#0f0f23,#1a1a2e);color:var(--t);font-family:'Inter',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background-image:radial-gradient(circle at 20% 80%,rgba(99,102,241,.15)0%,transparent 50%),radial-gradient(circle at 80% 20%,rgba(16,185,129,.15)0%,transparent 50%)}
     .box{max-width:500px;width:100%;background:var(--c);backdrop-filter:blur(16px);border-radius:24px;overflow:hidden;box-shadow:0 20px 40px rgba(0,0,0,.3);border:1px solid var(--b)}
     .head{text-align:center;padding:2rem 1.5rem 1.5rem;background:linear-gradient(135deg,rgba(99,102,241,.2),rgba(16,185,129,.1))}
-    .logo{width:90px;height:90px;margin:0 auto 1rem;filter:drop-shadow(0 4px 10px rgba(99,102,241,.3))}
+    .logo{width:90px;height:90px;margin:0 auto 1rem}
     h1{font-size:1.8rem;font-weight:700;background:linear-gradient(90deg,#a5b4fc,#c4b5fd);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:.5rem}
     .form{padding:2rem}
     .inp{position:relative;margin-bottom:1.5rem}
     .inp input{width:100%;padding:1rem 1rem 1rem 3rem;background:rgba(255,255,255,.08);border:1px solid var(--b);border-radius:16px;color:#fff;font-size:1rem;transition:all .3s}
     .inp input:focus{outline:none;border-color:var(--p);box-shadow:0 0 0 3px rgba(99,102,241,.2);transform:translateY(-2px)}
     .inp i{position:absolute;left:1rem;top:50%;transform:translateY(-50%);color:var(--tl)}
-    .btn{width:100%;padding:1rem;background:linear-gradient(135deg,var(--p),var(--pd));color:#fff;border:none;border-radius:16px;font-weight:600;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.5rem;transition:all .3s;margin-bottom:.75rem}
+    .btn{width:100%;padding:1rem;background:linear-gradient(135deg,var(--p),var(--pd));color:#fff;border:none;border-radius:16px;font-weight:600;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.5rem;transition:all .3s}
     .btn:hover{transform:translateY(-3px);box-shadow:0 10px 20px rgba(99,102,241,.4)}
     .loading,.error,.result{margin-top:1.5rem;padding:1.5rem;background:rgba(255,255,255,.05);border-radius:16px;display:none;text-align:center}
     .spinner{width:40px;height:40px;border:4px solid rgba(99,102,241,.2);border-top:4px solid var(--p);border-radius:50%;animation:s 1s linear infinite;margin:0 auto 1rem}
@@ -52,7 +52,7 @@
 
       <div class="loading" id="loading">
         <div class="spinner"></div>
-        <p>Checking device...</p>
+        <p>Starting server & checking...</p>
       </div>
       <div class="error" id="error"></div>
       <div class="result" id="result">
@@ -69,61 +69,53 @@
   </div>
 
   <script>
-    const OWNER = location.hostname.split('.')[0];
-    const REPO = location.pathname.split('/')[1] || 'fmi-checker';
-
     async function checkFMI() {
       const imei = document.getElementById('imei').value.trim();
       if (!/^[0-9a-zA-Z]{10,20}$/.test(imei)) return showError('Invalid IMEI');
 
       showLoading();
       try {
-        // 1. إرسال طلب إلى GitHub Actions
-        const runRes = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/actions/workflows/fmi-check.yml/dispatches`, {
+        // 1. إرسال طلب لبدء الخادم
+        const start = await fetch('https://api.github.com/repos/' + location.hostname.split('.')[0] + '/' + (location.pathname.split('/')[1] || 'fmi-checker') + '/dispatches', {
           method: 'POST',
           headers: {
             'Accept': 'application/vnd.github.v3+json',
-            'Authorization': 'Bearer ' + 'ghp_', // سيتم تجاهله، لكن يجب أن يكون موجودًا
-            'X-GitHub-Api-Version': '2022-11-28'
+            'Authorization': 'Bearer ' + btoa(Math.random()).substring(0, 20), // dummy token (ignored)
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            ref: 'main',
-            inputs: { imei }
+            event_type: 'start_server',
+            client_payload: { imei }
           })
         });
 
-        if (!runRes.ok) throw new Error('Failed to start check');
+        if (!start.ok) throw new Error('Failed to start server');
 
-        // 2. استطلاع الـ artifact
-        const artifactUrl = await waitForArtifact(imei);
-        const data = await fetch(artifactUrl).then(r => r.json());
-        
-        if (data.success) showResult(data.data);
-        else showError(data.error || 'Check failed');
+        // 2. استطلاع ngrok URL
+        const ngrokUrl = await pollNgrokUrl();
+        const result = await fetch(`${ngrokUrl}/check_fmi.php?imei=${imei}`).then(r => r.json());
+
+        if (result.success) showResult(result.data);
+        else showError(result.error || 'Check failed');
       } catch (e) {
         showError(e.message || 'Network error');
       }
     }
 
-    async function waitForArtifact(imei) {
-      for (let i = 0; i < 20; i++) {
+    async function pollNgrokUrl() {
+      for (let i = 0; i < 25; i++) {
         await new Promise(r => setTimeout(r, 3000));
         try {
-          const runs = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/actions/runs?event=workflow_dispatch&status=completed&per_page=10`).then(r => r.json());
-          const run = runs.workflow_runs.find(r => 
-            r.head_commit.message.includes(imei) || 
-            r.name === 'FMI Check'
-          );
-          if (run && run.status === 'completed') {
-            const artifacts = await fetch(run.artifacts_url).then(r => r.json());
-            const artifact = artifacts.artifacts.find(a => a.name.includes(imei));
-            if (artifact) {
-              return artifact.archive_download_url.replace('api.github.com', 'github.com').replace('/zip', '');
-            }
+          const runs = await fetch('https://api.github.com/repos/' + location.hostname.split('.')[0] + '/' + (location.pathname.split('/')[1] || 'fmi-checker') + '/actions/runs?event=repository_dispatch&per_page=1').then(r => r.json());
+          const run = runs.workflow_runs[0];
+          if (run && run.status === 'in_progress') {
+            const logs = await fetch(run.logs_url).then(r => r.text());
+            const match = logs.match(/https:\/\/[a-z0-9]+\.ngrok\.io/);
+            if (match) return match[0];
           }
         } catch {}
       }
-      throw new Error('Timeout: Check not ready');
+      throw new Error('Server timeout');
     }
 
     function showResult(d) {
