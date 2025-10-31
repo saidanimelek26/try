@@ -1,0 +1,37 @@
+name: Run FMI Check
+
+on:
+  workflow_dispatch:
+    inputs:
+      imei:
+        description: 'IMEI or Serial'
+        required: true
+        type: string
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: curl, mbstring
+
+      - name: Run FMI Check
+        env:
+          IMEI: ${{ inputs.imei }}
+        run: |
+          echo "Running check for IMEI: $IMEI"
+          cd php || cd .
+          php check_fmi.php > ../result.json
+          cat ../result.json
+
+      - name: Upload Result
+        uses: actions/upload-artifact@v3
+        with:
+          name: fmi-result
+          path: result.json
