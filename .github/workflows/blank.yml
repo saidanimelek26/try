@@ -1,11 +1,14 @@
 name: FMI Check
 
 on:
-  repository_dispatch:
-    types: [run_fmi]
+  workflow_dispatch:
+    inputs:
+      imei:
+        description: 'IMEI or Serial'
+        required: true
 
 jobs:
-  run:
+  check:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -17,22 +20,18 @@ jobs:
           php-version: '8.2'
           extensions: curl, mbstring, json
 
-      - name: Create results dir
-        run: mkdir -p results
-
       - name: Run PHP
         env:
-          IMEI: ${{ github.event.client_payload.imei }}
+          IMEI: ${{ inputs.imei }}
         run: |
-          echo "<?php \$_GET['imei'] = '${IMEI}'; ?>" > temp.php
+          echo "<?php \$_GET['imei'] = '$IMEI'; ?>" > temp.php
           cat check_fmi.php >> temp.php
-          php temp.php > results/${IMEI}.json
-          rm temp.php
+          php temp.php > result.json
+          cat result.json
 
-      - name: Commit result
-        run: |
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
-          git add results/${{ github.event.client_payload.imei }}.json
-          git commit -m "FMI result: ${{ github.event.client_payload.imei }}" || exit 0
-          git push
+      - name: Upload Result
+        uses: actions/upload-artifact@v4
+        with:
+          name: result-${{ inputs.imei }}
+          path: result.json
+          retention-days: 1
