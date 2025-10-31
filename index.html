@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FMI Checker - DEKAN UNLOCK</title>
+  <link rel="icon" href="https://img.icons8.com/fluency/48/iphone-14-pro.png"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+  <style>
+    :root {
+      --primary: #6366f1;
+      --primary-dark: #4f46e5;
+      --success: #10b981;
+      --danger: #ef4444;
+      --bg: #0f0f23;
+      --card: rgba(255, 255, 255, 0.05);
+      --text: #e2e8f0;
+      --text-light: #94a3b8;
+      --border: rgba(255, 255, 255, 0.1);
+    }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 100%);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background-image: 
+        radial-gradient(circle at 20% 80%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(16, 185, 129, 0.15) 0%, transparent 50%);
+    }
+    .container {
+      width: 100%;
+      max-width: 500px;
+      background: var(--card);
+      backdrop-filter: blur(16px);
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--border);
+    }
+    .header {
+      text-align: center;
+      padding: 2rem 1.5rem 1.5rem;
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(16, 185, 129, 0.1));
+    }
+    .logo {
+      width: 90px;
+      height: 90px;
+      margin: 0 auto 1rem;
+      filter: drop-shadow(0 4px 10px rgba(99, 102, 241, 0.3));
+    }
+    h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      background: linear-gradient(90deg, #a5b4fc, #c4b5fd);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.5rem;
+    }
+    .subtitle {
+      font-size: 0.95rem;
+      color: var(--text-light);
+    }
+    .form-container {
+      padding: 2rem;
+    }
+    .input-group {
+      position: relative;
+      margin-bottom: 1.5rem;
+    }
+    .input-group input {
+      width: 100%;
+      padding: 1rem 1rem 1rem 3rem;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 16px;
+      color: white;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+    }
+    .input-group input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+      transform: translateY(-2px);
+    }
+    .input-group i {
+      position: absolute;
+      left: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-light);
+      font-size: 1.1rem;
+    }
+    .btn {
+      width: 100%;
+      padding: 1rem;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+      border: none;
+      border-radius: 16px;
+      font-weight: 600;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+    .btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 20px rgba(99, 102, 241, 0.4);
+    }
+    .btn:active {
+      transform: translateY(-1px);
+    }
+    .btn-github {
+      background: #333;
+    }
+    .result {
+      margin-top: 1.5rem;
+      padding: 1.5rem;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      display: none;
+    }
+    .result-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .result-item:last-child { border: none; }
+    .result-label { color: var(--text-light); font-size: 0.95rem; }
+    .result-value { font-weight: 600; }
+    .status-on { color: var(--danger); }
+    .status-off { color: var(--success); }
+    .loading {
+      text-align: center;
+      padding: 2rem;
+      display: none;
+    }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid rgba(99, 102, 241, 0.2);
+      border-top: 4px solid var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 1rem;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .error {
+      background: rgba(239, 68, 68, 0.1);
+      color: #fca5a5;
+      padding: 1rem;
+      border-radius: 12px;
+      border-left: 4px solid var(--danger);
+      margin-top: 1rem;
+      display: none;
+      font-size: 0.9rem;
+    }
+    footer {
+      text-align: center;
+      padding: 1.5rem;
+      font-size: 0.8rem;
+      color: var(--text-light);
+      border-top: 1px solid var(--border);
+    }
+    .tags {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+    }
+    .tag {
+      background: rgba(99, 102, 241, 0.15);
+      color: #a5b4fc;
+      padding: 0.4rem 0.8rem;
+      border-radius: 50px;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <lottie-player class="logo" src="https://assets5.lottiefiles.com/packages/lf20_kkflmtur.json" background="transparent" speed="1" loop autoplay></lottie-player>
+      <h1>DEKAN UNLOCK</h1>
+      <p class="subtitle">Free FMI ON / OFF Checker</p>
+    </div>
+
+    <div class="form-container">
+      <div class="input-group">
+        <i class="fas fa-mobile-alt"></i>
+        <input type="text" id="imei" placeholder="Enter IMEI or Serial Number" maxlength="20"/>
+      </div>
+
+      <button class="btn" onclick="checkFMI()">
+        <i class="fas fa-search"></i> Check Now
+      </button>
+      <button class="btn btn-github" onclick="runInGitHub()">
+        <i class="fab fa-github"></i> Check via GitHub
+      </button>
+
+      <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <p>Checking device...</p>
+      </div>
+
+      <div class="error" id="error"></div>
+
+      <div class="result" id="result">
+        <div class="result-item">
+          <span class="result-label">Model</span>
+          <span class="result-value" id="model">-</span>
+        </div>
+        <div class="result-item">
+          <span class="result-label">IMEI/SN</span>
+          <span class="result-value" id="sn">-</span>
+        </div>
+        <div class="result-item">
+          <span class="result-label">Find My</span>
+          <span class="result-value" id="fmi">-</span>
+        </div>
+      </div>
+
+      <div class="tags">
+        <div class="tag">Free</div>
+        <div class="tag">Instant</div>
+        <div class="tag">Secure</div>
+      </div>
+    </div>
+
+    <footer>
+      © 2025 DEKAN UNLOCK • Secure & Fast Verification
+    </footer>
+  </div>
+
+  <script>
+    const REPO = location.hostname.split('.')[0] + '/' + location.pathname.split('/')[1].replace(/\/$/, '');
+
+    async function checkFMI() {
+      const imei = document.getElementById('imei').value.trim();
+      if (!/^[0-9a-zA-Z]{10,20}$/.test(imei)) return showError("Invalid IMEI or Serial");
+
+      showLoading();
+      try {
+        const res = await fetch(`check_fmi.php?imei=${imei}`);
+        if (!res.ok) throw new Error("PHP not supported on GitHub Pages");
+        const data = await res.json();
+        if (data.success) showResult(data.data);
+        else showError(data.error || "Check failed");
+      } catch {
+        showError("Use 'Check via GitHub' button below");
+      }
+    }
+
+    async function runInGitHub() {
+      const imei = document.getElementById('imei').value.trim();
+      if (!/^[0-9a-zA-Z]{10,20}$/.test(imei)) return showError("Invalid IMEI or Serial");
+
+      showLoading();
+      try {
+        await fetch(`https://api.github.com/repos/${REPO}/dispatches`, {
+          method: 'POST',
+          headers: { 'Accept': 'application/vnd.github.v3+json' },
+          body: JSON.stringify({
+            event_type: 'run_fmi',
+            client_payload: { imei }
+          })
+        });
+
+        const result = await pollResult(imei);
+        showResult(result.data);
+      } catch (e) {
+        showError(e.message || "Failed to connect");
+      }
+    }
+
+    async function pollResult(imei) {
+      for (let i = 0; i < 30; i++) {
+        await new Promise(r => setTimeout(r, 3000));
+        try {
+          const res = await fetch(`https://raw.githubusercontent.com/${REPO}/main/results/${imei}.json?t=${Date.now()}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.success) return data;
+          }
+        } catch {}
+      }
+      throw new Error("Timeout: Check took too long");
+    }
+
+    function showResult(d) {
+      document.getElementById('model').textContent = d.model || 'Unknown';
+      document.getElementById('sn').textContent = d.imei;
+      const fmi = document.getElementById('fmi');
+      fmi.textContent = d.fmi_display || (d.fmi_status === 'ON' ? 'ON' : 'OFF');
+      fmi.className = `result-value ${d.fmi_status === 'ON' ? 'status-on' : 'status-off'}`;
+      document.getElementById('result').style.display = 'block';
+      hideLoading();
+    }
+
+    function showError(msg) {
+      const el = document.getElementById('error');
+      el.textContent = msg;
+      el.style.display = 'block';
+      hideLoading();
+    }
+
+    function showLoading() {
+      document.getElementById('loading').style.display = 'block';
+      document.getElementById('error').style.display = document.getElementById('result').style.display = 'none';
+    }
+
+    function hideLoading() {
+      document.getElementById('loading').style.display = 'none';
+    }
+
+    document.getElementById('imei').addEventListener('keypress', e => {
+      if (e.key === 'Enter') checkFMI();
+    });
+  </script>
+</body>
+</html>
