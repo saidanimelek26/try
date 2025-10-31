@@ -1,14 +1,11 @@
-name: FMI Check
+name: FMI Server
 
 on:
-  workflow_dispatch:
-    inputs:
-      imei:
-        description: 'IMEI or Serial'
-        required: true
+  repository_dispatch:
+    types: [start_server]
 
 jobs:
-  check:
+  serve:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -20,18 +17,18 @@ jobs:
           php-version: '8.2'
           extensions: curl, mbstring, json
 
-      - name: Run PHP
-        env:
-          IMEI: ${{ inputs.imei }}
+      - name: Start PHP Server
         run: |
-          echo "<?php \$_GET['imei'] = '$IMEI'; ?>" > temp.php
-          cat check_fmi.php >> temp.php
-          php temp.php > result.json
-          cat result.json
+          nohup php -S 0.0.0.0:3000 -t . > server.log 2>&1 &
+          echo "PHP server started on port 3000"
 
-      - name: Upload Result
-        uses: actions/upload-artifact@v4
+      - name: Start ngrok
+        uses: P3TERX/ngrok-action@v1
         with:
-          name: result-${{ inputs.imei }}
-          path: result.json
-          retention-days: 1
+          ngrok_token: ${{ secrets.NGROK_TOKEN }}
+          port: 3000
+          region: us
+
+      - name: Wait for request
+        run: |
+          sleep 30  # انتظر الطلب
